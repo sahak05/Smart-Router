@@ -17,6 +17,16 @@ def init_db():
         )
     ''')
     
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS firewall_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            src_ip TEXT NOT NULL,
+            dest_ip TEXT NOT NULL,
+            dest_port TEXT NOT NULL,
+            description TEXT
+        )
+    ''')
+    
     conn.commit()
     conn.close()
     

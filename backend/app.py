@@ -125,8 +125,6 @@ def update_device(mac):
     
     return jsonify({"status": "success", "message": "Device updated"})
 
-# --- ADD THIS TO YOUR APP.PY ---
-
 # Global dictionary to track running background captures
 active_captures = {}
 
@@ -212,6 +210,32 @@ def capture_status():
     # Return a list of currently running captures
     status_list = [{"mac": k, "ip": v["ip"], "filename": v["filename"]} for k, v in active_captures.items()]
     return jsonify(status_list)
+
+
+@app.route('/api/firewall', methods=['GET', 'POST'])
+def manage_firewall():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        # I am adding new firewall rules
+        data = request.json
+        cursor.execute('''
+            INSERT INTO firewall_rules (src_ip, dest_ip, dest_port, description)
+            VALUES (?, ?, ?, ?)
+        ''', (data.get('src_ip', 'ANY'), data.get('dest_ip', 'ANY'), str(data.get('dest_port', 'ANY')), data.get('description', '')))
+        
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": "Firewall rule activated."})
+
+    else:
+        # GET request: List all firewalls rules
+        cursor.execute('SELECT * FROM firewall_rules')
+        rules = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return jsonify(rules)
+
 
 
 if __name__ == '__main__':
