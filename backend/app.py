@@ -8,7 +8,7 @@ from flask_cors import CORS
 from mac_vendor_lookup import MacLookup
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for all routes
+CORS(app, resources={r"/api/*": {"origins": "*"}}, methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 mac = MacLookup()
 try:
@@ -107,7 +107,7 @@ def get_devices():
     conn.close()
     return jsonify(enriched_devices)
 
-@app.route('/api/devices/<mac>', methods=['POST'])
+@app.route('/api/devices/<mac>', methods=['PUT'])
 def update_device(mac):
     data = request.json
     conn = get_db_connection()
@@ -117,7 +117,7 @@ def update_device(mac):
     cursor.execute('''
         UPDATE devices 
         SET custom_name = ?, device_type = ?, description = ?
-        WHERE mac = ?
+        WHERE mac_address = ?
     ''', (data.get('custom_name'), data.get('device_type'), data.get('description'), mac))
     
     conn.commit()
