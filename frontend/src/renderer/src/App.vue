@@ -111,9 +111,16 @@
                     >Save Changes</v-btn
                   >
                   <v-spacer></v-spacer>
-                  <v-btn color="error" variant="tonal" prepend-icon="mdi-block-helper"
-                    >Block Device</v-btn
+                  <v-btn
+                    :color="isDeviceAuthorized ? 'error' : 'success'"
+                    variant="tonal"
+                    :prepend-icon="
+                      isDeviceAuthorized ? 'mdi-block-helper' : 'mdi-check-network-outline'
+                    "
+                    @click="toggleDeviceAccess"
                   >
+                    {{ isDeviceAuthorized ? 'Block Device (Revoke)' : 'Authorize Device' }}
+                  </v-btn>
                 </v-card-actions>
               </v-card>
             </div>
@@ -133,15 +140,63 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 // Empty array that will hold your real database records
 const devices = ref([])
 const selectedDevice = ref(null)
+const firewallRules = ref([])
 
+// Fetch the current Allow-List from the database
+const fetchFirewallRules = async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/firewall')
+    firewallRules.value = await response.json()
+    console.log('Firewall rules fetched:', firewallRules.value)
+  } catch (error) {
+    console.error('Error fetching firewall rules:', error)
+  }
+}
+
+// Automatically checks if the selected device's IP exists in the firewall rules
+const isDeviceAuthorized = computed(() => {
+  if (!selectedDevice.value) return false
+  return firewallRules.value.some((rule) => rule.src_ip === selectedDevice.value.ip)
+})
+
+// The Toggle Function
+const toggleDeviceAccess = async () => {
+  if (!selectedDevice.value) return
+  const ip = selectedDevice.value.ip
+
+  try {
+    if (isDeviceAuthorized.value) {
+      // It is currently allowed. Let's BLOCK it (Delete the rule)
+      await fetch(`http://127.0.0.1:5000/api/firewall/${ip}`, { method: 'DELETE' })
+    } else {
+      // It is currently blocked. Let's AUTHORIZE it (Add a rule for ANY traffic)
+      await fetch('http://127.0.0.1:5000/api/firewall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          src_ip: ip,
+          dest_ip: 'ANY',
+          dest_port: 'ANY',
+          description: `Auto-Allowed: ${selectedDevice.value.custom_name || selectedDevice.value.vendor}`
+        })
+      })
+    }
+    // Refresh the rules so the UI button instantly changes color
+    fetchFirewallRules()
+    console.log(firewallRules.value, selectedDevice.value)
+  } catch (error) {
+    console.error('Error toggling firewall access:', error)
+  }
+}
 // The engine that pulls data from your Python API
 const fetchDevices = async () => {
   try {
+    fetchFirewallRules()
     const response = await fetch('http://127.0.0.1:5000/api/devices')
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -155,6 +210,8 @@ const fetchDevices = async () => {
 
 onMounted(() => {
   fetchDevices()
+  fetchFirewallRules()
+  console.log(firewallRules.value)
 })
 
 const selectDevice = (device) => {

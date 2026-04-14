@@ -236,7 +236,17 @@ def manage_firewall():
         conn.close()
         return jsonify(rules)
 
-
+@app.route('/api/firewall/<ip_address>', methods=['DELETE'])
+def remove_firewall_rule(ip_address):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Wipe any allow-list rules for this specific IP
+    cursor.execute('DELETE FROM firewall_rules WHERE src_ip = ?', (ip_address,))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": f"Rules removed for {ip_address}. Device blocked."})
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
