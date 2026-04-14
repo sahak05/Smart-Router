@@ -16,7 +16,7 @@ def get_allow_list():
 HOTSPOT_FILTER = "ip and ((ip.SrcAddr >= 192.168.137.2) and (ip.SrcAddr <= 192.168.137.254) or (ip.DstAddr >= 192.168.137.2) and (ip.DstAddr <= 192.168.137.254))"
 
 try:
-    with pydivert.winDivert(HOTSPOT_FILTER) as w:
+    with pydivert.WinDivert(HOTSPOT_FILTER) as w:
         print("Firewall is running...")
         for packet in w:
             src_ip = packet.src_addr
