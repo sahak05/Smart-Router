@@ -39,9 +39,9 @@ def get_devices():
         parts = line.split()
         
         # Parse the device entries
-        if len(parts) >= 2 and '.' in parts[0] and '-' in parts[1]: # Basic check for IP and MAC format
+        if len(parts) >= 2 and '.' in parts[0] and '-' in parts[1]: 
             ip_address = parts[0]
-            mac_address = parts[1].replace('-', ':').lower() # Normalize MAC address format
+            mac_address = parts[1].replace('-', ':').lower() 
                 
             # Ignore multicast and broadcast addresses
             if not ip_address.startswith(SUBNET_PREFIX):
@@ -59,8 +59,8 @@ def get_devices():
                 pass
             
             devices.append({
-                'ip': ip_address,
-                'mac': mac_address,
+                'ip_address': ip_address,
+                'mac_address': mac_address,
                 'vendor': vendor,
                 'interface': ROUTER_IP,
                 "device_type": "Unknown Type",
@@ -74,7 +74,7 @@ def get_devices():
     enriched_devices = []
     
     for device in devices:
-        c.execute('SELECT * FROM devices WHERE mac_address = ?', (device['mac'],))
+        c.execute('SELECT * FROM devices WHERE mac_address = ?', (device['mac_address'],))
         row = c.fetchone()
         
         if row is None:
@@ -83,7 +83,7 @@ def get_devices():
                 INSERT INTO devices (ip_address, mac_address, vendor, interface, device_type, custom_name, description)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
-                device['ip'], device['mac'],device['vendor'],
+                device['ip_address'], device['mac_address'],device['vendor'],
                 device['interface'], device['device_type'], device['custom_name'],
                 device['description']
             ))
@@ -96,7 +96,7 @@ def get_devices():
                 SET ip_address = ?, vendor = ?, interface = ?
                 WHERE mac_address = ?
             ''', (
-                device['ip'], device['vendor'], device['interface'], device['mac']
+                device['ip_address'], device['vendor'], device['interface'], device['mac_address']
             ))
             conn.commit()
             device['device_type'] = row['device_type']
@@ -113,7 +113,6 @@ def update_device(mac):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Update the custom fields in the database
     cursor.execute('''
         UPDATE devices 
         SET custom_name = ?, device_type = ?, description = ?
@@ -128,7 +127,7 @@ def update_device(mac):
 # Global dictionary to track running background captures
 active_captures = {}
 
-# REPLACE "X" WITH YOUR ACTUAL TSHARK INTERFACE NUMBER
+# TSHARK INTERFACE NUMBER => Command & "C:\Program Files\Wireshark\tshark.exe" -D
 TSHARK_INTERFACE = "6" 
 
 @app.route('/api/captures/start', methods=['POST'])
@@ -137,8 +136,9 @@ def start_capture():
     mac = data.get('mac')
     ip = data.get('ip')
     capture_type = data.get('type') # 'duration' or 'packets'
-    value = str(data.get('value')) # e.g., '60' seconds or '100' packets
-    filename = data.get('filename', f"capture_{mac.replace(':', '')}.pcap")
+    value = str(data.get('value')) 
+    filename = data.get('filename', f"capture_{mac.replace(':', '')}")
+    filename = filename if filename.endswith('.pcap') else f"{filename}.pcap"
     
     # Get the exact, absolute path to where app.py is located
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -166,10 +166,9 @@ def start_capture():
     cmd.extend(['-w', filepath])
     
     try:
-        # Popen starts the process in the background and DOES NOT block Flask
         process = subprocess.Popen(cmd)
         
-        # Save the process so we can kill it later if needed
+        # Save the process =>  can kill it later if needed
         active_captures[mac] = {
             "process": process,
             "ip": ip,
