@@ -36,4 +36,4 @@ def send_breach_alert(target_ip, threshold_limit):
 
 if __name__ == "__main__":
     print("[*] Testing SMTP connection...")
-    send_breach_alert("192.168.137.99", 500) # Test alert for a hypothetical breach scenario
+    # send_breach_alert("192.168.137.99", 500) # Test alert for a hypothetical breach scenario

@@ -12,9 +12,11 @@ def init_db():
             vendor TEXT,
             custom_name TEXT,
             device_type TEXT,
+            interface TEXT,
             threshold INTEGER DEFAULT 500,
             is_throttled INTEGER DEFAULT 0,
-            throttle_lift_time TEXT
+            throttle_lift_time TEXT,
+            description TEXT
         )
     ''')
 

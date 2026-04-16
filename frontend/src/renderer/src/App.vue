@@ -331,6 +331,7 @@
             </v-table>
           </v-col>
         </v-row>
+        <MetricsDashboard v-if="currentView === 'metrics'" />
       </v-container>
     </v-main>
   </v-app>
@@ -338,6 +339,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import MetricsDashboard from './components/MetricsDashboard.vue' // <<< NEW IMPORT
 
 // --- NAVIGATION STATE ---
 const currentMenuSelection = ref(['devices'])
@@ -355,18 +357,8 @@ const selectedDevice = ref(null)
 const selectedCaptureDevice = ref(null)
 const firewallRules = ref([])
 
-const captureSettings = ref({
-  type: 'duration',
-  value: 60,
-  filename: ''
-})
-
-const newRule = ref({
-  src_ip: '',
-  dest_ip: 'ANY',
-  dest_port: 'ANY',
-  description: ''
-})
+const captureSettings = ref({ type: 'duration', value: 60, filename: '' })
+const newRule = ref({ src_ip: '', dest_ip: 'ANY', dest_port: 'ANY', description: '' })
 
 // --- API FETCH FUNCTIONS ---
 const fetchDevices = async () => {
@@ -479,7 +471,6 @@ const startCapture = async () => {
       value: captureSettings.value.value,
       filename: captureSettings.value.filename
     }
-
     await fetch('http://127.0.0.1:5000/api/captures/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -247,5 +247,39 @@ def remove_firewall_rule(ip_address):
     conn.close()
     return jsonify({"status": "success", "message": f"Rules removed for {ip_address}. Device blocked."})
 
+@app.route('/api/metrics', methods=['GET'])
+def get_metrics():
+    try:
+        conn = sqlite3.connect('router.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # total Devices
+        cursor.execute("SELECT COUNT(*) as total FROM devices")
+        total_devices = cursor.fetchone()['total']
+        
+        # Active IPS Throttles
+        cursor.execute("SELECT COUNT(*) as throttled FROM devices WHERE is_throttled = 1")
+        throttled_devices = cursor.fetchone()['throttled']
+        
+        # Firewall Rules
+        cursor.execute("SELECT COUNT(*) as rules FROM firewall_rules")
+        total_rules = cursor.fetchone()['rules']
+        
+        # Device Threshold Allocations
+        cursor.execute("SELECT custom_name, ip_address, threshold FROM devices WHERE ip_address IS NOT NULL LIMIT 10")
+        devices_data = [dict(row) for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        return jsonify({
+            'total_devices': total_devices,
+            'throttled_devices': throttled_devices,
+            'total_rules': total_rules,
+            'devices_data': devices_data
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
