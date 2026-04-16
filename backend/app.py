@@ -18,7 +18,7 @@ except Exception as e:
 
 # Helpers
 def get_db_connection():
-    conn = sqlite3.connect('router_data.db')
+    conn = sqlite3.connect('router.db')
     conn.row_factory = sqlite3.Row
     return conn
 
