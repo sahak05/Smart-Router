@@ -150,8 +150,14 @@ def run_firewall():
                         allowed = True
                         break
                 
+                # Explicitly drop unauthorized traffic
                 if allowed:
                     w.send(packet)
+                else:
+                    # Drop the packet - don't send it
+                    if packet_tracker[local_ip]['count'] % 50 == 0:
+                        print(f"[BLOCKED] Dropped packet from unauthorized device {src_ip}:{src_port} -> {dest_ip}:{dest_port}")
+                    pass
 
     except PermissionError:
         print("\n[ERROR] Permission denied: Please run this script with administrative privileges.")

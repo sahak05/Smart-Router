@@ -22,6 +22,24 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def is_device_online(ip_address, timeout=2):
+    """
+    Check if a device is currently online by pinging it.
+    Returns True if device responds, False otherwise.
+    """
+    try:
+        # Use ping with timeout
+        result = subprocess.run(
+            ['ping', '-n', '1', '-w', str(timeout * 1000), ip_address],
+            capture_output=True,
+            text=True,
+            timeout=timeout + 1
+        )
+        return result.returncode == 0
+    except Exception as e:
+        print(f"Ping error for {ip_address}: {e}")
+        return False
+
 @app.route('/api/devices', methods=['GET'])
 def get_devices():
     # Run the Address Resolution command to get the list of devices
@@ -48,6 +66,11 @@ def get_devices():
                 continue
             
             if ip_address == ROUTER_IP or ip_address == BROADCAST_IP:
+                continue
+
+            # Check if device is currently online before adding to list
+            if not is_device_online(ip_address):
+                print(f"Device {ip_address} is offline, skipping...")
                 continue
 
             # Get the vendor name from the MAC address
